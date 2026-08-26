@@ -51,14 +51,14 @@ pipeline {
                 echo 'Checking Tomcat status...'
         
                 bat '''
-                    netstat -ano | findstr ":8005" >nul
+                    netstat -ano | findstr ":8084" >nul
         
                     if %ERRORLEVEL% EQU 0 (
-                        echo Tomcat is running. Stopping Tomcat...
+                        echo Tomcat is running on port 8084. Stopping Tomcat...
                         "%TOMCAT_HOME%\\bin\\shutdown.bat"
                         timeout /t 5 /nobreak
                     ) else (
-                        echo Tomcat is not running. Continuing deployment...
+                        echo Tomcat is not running on port 8084. Continuing deployment...
                     )
                 '''
             }
