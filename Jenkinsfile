@@ -51,15 +51,15 @@ pipeline {
                 echo 'Checking Tomcat status...'
         
                 bat '''
-                    powershell -NoProfile -Command ^
-                    "$p = Get-NetTCPConnection -LocalPort 8005 -State Listen -ErrorAction SilentlyContinue; ^
-                     if ($p) { ^
-                         Write-Host 'Tomcat is running. Stopping Tomcat...'; ^
-                         & '%TOMCAT_HOME%\\bin\\shutdown.bat'; ^
-                         Start-Sleep -Seconds 5 ^
-                     } else { ^
-                         Write-Host 'Tomcat is not running. Continuing deployment...' ^
-                     }"
+                    netstat -ano | findstr ":8005" >nul
+        
+                    if %ERRORLEVEL% EQU 0 (
+                        echo Tomcat is running. Stopping Tomcat...
+                        "%TOMCAT_HOME%\\bin\\shutdown.bat"
+                        timeout /t 5 /nobreak
+                    ) else (
+                        echo Tomcat is not running. Continuing deployment...
+                    )
                 '''
             }
         }
