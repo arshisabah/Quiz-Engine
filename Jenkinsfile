@@ -48,11 +48,18 @@ pipeline {
 
         stage('Stop Tomcat') {
             steps {
-                echo 'Stopping Tomcat...'
-
+                echo 'Checking Tomcat status...'
+        
                 bat '''
-                    "%TOMCAT_HOME%\\bin\\shutdown.bat"
-                    timeout /t 5 /nobreak
+                    powershell -NoProfile -Command ^
+                    "$p = Get-NetTCPConnection -LocalPort 8005 -State Listen -ErrorAction SilentlyContinue; ^
+                     if ($p) { ^
+                         Write-Host 'Tomcat is running. Stopping Tomcat...'; ^
+                         & '%TOMCAT_HOME%\\bin\\shutdown.bat'; ^
+                         Start-Sleep -Seconds 5 ^
+                     } else { ^
+                         Write-Host 'Tomcat is not running. Continuing deployment...' ^
+                     }"
                 '''
             }
         }
