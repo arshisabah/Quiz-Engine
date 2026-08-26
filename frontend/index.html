@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuizEngine — API Test Booklet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#e9eef0;
+    --paper-deep:#dbe4e6;
+    --line:#b9c7c2;
+    --ink:#1f2733;
+    --ink-soft:#54626b;
+    --pen:#a8342a;
+    --pen-deep:#8a281f;
+    --pass:#2f6b4f;
+    --pass-bg:#e4efe8;
+    --fail-bg:#f4e5e2;
+    --gold:#b8912a;
+    --card:#f4f7f6;
+    --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+    --stamp: 'Special Elite', 'Courier New', monospace;
+    --body: 'Inter', system-ui, sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    background:
+      repeating-linear-gradient(180deg, transparent, transparent 27px, var(--line) 28px, var(--line) 28px)
+      , var(--paper);
+    color:var(--ink);
+    font-family:var(--body);
+    font-size:15px;
+    line-height:1.5;
+  }
+
+  a{color:inherit;}
+
+  .skip-link{position:absolute;left:-999px;top:0;background:var(--ink);color:#fff;padding:8px 14px;z-index:100;}
+  .skip-link:focus{left:8px;top:8px;}
+
+  header.masthead{
+    position:sticky; top:0; z-index:20;
+    background:var(--paper-deep);
+    border-bottom:3px double var(--ink-soft);
+    padding:18px 28px 16px;
+    display:flex; flex-wrap:wrap; align-items:flex-end; gap:18px; justify-content:space-between;
+  }
+
+  .masthead-title h1{
+    font-family:var(--stamp);
+    font-size:26px;
+    letter-spacing:0.5px;
+    margin:0 0 2px;
+  }
+  .masthead-title p{
+    margin:0; color:var(--ink-soft); font-size:13px;
+  }
+  .masthead-title .booklet-no{color:var(--pen); font-weight:600;}
+
+  .base-url-form{display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:13px;}
+  .base-url-form label{color:var(--ink-soft);}
+  .base-url-form input{
+    font-family:var(--mono); font-size:13px; padding:7px 10px;
+    border:1px solid var(--ink-soft); border-radius:2px; background:#fff; min-width:230px;
+  }
+  .base-url-form button{
+    font-family:var(--body); font-weight:600; font-size:13px; cursor:pointer;
+    border:1px solid var(--ink); background:var(--ink); color:#fff; padding:8px 14px; border-radius:2px;
+  }
+  .conn-dot{width:9px;height:9px;border-radius:50%;background:#999;display:inline-block;margin-right:6px;}
+  .conn-dot.ok{background:var(--pass);}
+  .conn-dot.bad{background:var(--pen);}
+  .conn-status{font-size:12px; color:var(--ink-soft);}
+
+  .layout{display:grid; grid-template-columns:230px 1fr; gap:0; max-width:1180px; margin:0 auto;}
+
+  nav.toc{
+    position:sticky; top:78px; align-self:start;
+    padding:22px 14px 40px 28px;
+  }
+  nav.toc h2{
+    font-family:var(--stamp); font-size:13px; text-transform:uppercase; letter-spacing:1px;
+    color:var(--ink-soft); margin:0 0 10px;
+  }
+  nav.toc .section-group{margin-bottom:18px;}
+  nav.toc .section-group h3{
+    font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--gold);
+    margin:0 0 6px; font-weight:700;
+  }
+  nav.toc ol{list-style:none; margin:0; padding:0;}
+  nav.toc li{margin-bottom:2px;}
+  nav.toc a{
+    display:flex; align-items:center; gap:8px; text-decoration:none; color:var(--ink);
+    font-size:13px; padding:5px 8px; border-radius:2px;
+  }
+  nav.toc a:hover, nav.toc a:focus-visible{background:rgba(0,0,0,0.06);}
+  nav.toc .bubble{
+    width:14px; height:14px; border-radius:50%; border:1.5px solid var(--ink-soft); flex:none;
+  }
+
+  main{padding:26px 28px 80px;}
+
+  section.card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:3px;
+    box-shadow:0 1px 0 rgba(0,0,0,0.03);
+    margin-bottom:26px;
+    scroll-margin-top:90px;
+  }
+  section.card > .card-head{
+    display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    padding:16px 20px 12px; border-bottom:1px dashed var(--line);
+  }
+  section.card h2{
+    font-family:var(--stamp); font-size:17px; margin:0; letter-spacing:0.3px;
+  }
+  .method-badge{
+    font-family:var(--mono); font-size:11px; font-weight:600; padding:3px 8px; border-radius:2px;
+    letter-spacing:0.5px; color:#fff; flex:none;
+  }
+  .method-GET{background:#3a6f8f;}
+  .method-POST{background:var(--pass);}
+  .method-DELETE{background:var(--pen);}
+  .card-endpoint{font-family:var(--mono); font-size:12.5px; color:var(--ink-soft); margin:2px 0 0;}
+
+  .card-body{padding:16px 20px 20px;}
+  .card-note{font-size:12.5px; color:var(--ink-soft); margin:0 0 14px;}
+
+  .field-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; margin-bottom:8px;}
+  .field-grid.single{grid-template-columns:1fr;}
+  .field{display:flex; flex-direction:column; gap:4px;}
+  .field.span-2{grid-column:1 / -1;}
+  .field label{font-size:12px; font-weight:600; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.4px;}
+  .field input, .field select, .field textarea{
+    font-family:var(--body); font-size:14px; padding:8px 10px;
+    border:1px solid #b7c0c2; border-radius:2px; background:#fff; color:var(--ink);
+  }
+  .field textarea{resize:vertical; min-height:56px; font-family:var(--mono); font-size:12.5px;}
+  .field input:focus, .field select:focus, .field textarea:focus{
+    outline:2px solid var(--gold); outline-offset:1px;
+  }
+  .hint{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+
+  .option-row, .answer-row{
+    display:grid; grid-template-columns:1fr auto auto; gap:8px; align-items:center; margin-bottom:6px;
+  }
+  .answer-row{grid-template-columns:110px 1fr auto;}
+  .option-row label.chk, .answer-row label.chk{display:flex; align-items:center; gap:5px; font-size:12px; white-space:nowrap;}
+  .row-remove{
+    font-family:var(--mono); font-size:12px; cursor:pointer; background:none; border:1px solid var(--pen);
+    color:var(--pen); border-radius:2px; padding:6px 9px; line-height:1;
+  }
+  .row-add{
+    font-family:var(--body); font-size:12.5px; font-weight:600; cursor:pointer;
+    background:none; border:1px dashed var(--ink-soft); color:var(--ink-soft); border-radius:2px;
+    padding:7px 12px; margin-top:2px;
+  }
+  .row-add:hover{border-color:var(--ink); color:var(--ink);}
+
+  .actions-row{display:flex; align-items:center; gap:12px; margin-top:14px;}
+
+  .stamp-btn{
+    font-family:var(--stamp); font-size:14px; letter-spacing:0.5px; cursor:pointer;
+    background:#fff; border:2px solid var(--pen); color:var(--pen);
+    padding:9px 20px; border-radius:2px; text-transform:uppercase;
+    transition:transform .05s ease;
+  }
+  .stamp-btn:hover{background:var(--pen); color:#fff;}
+  .stamp-btn:active{transform:scale(0.97);}
+  .stamp-btn:disabled{opacity:0.5; cursor:progress;}
+
+  .quickfill{font-size:12px; color:var(--ink-soft);}
+  .quickfill b{color:var(--ink);}
+
+  .response-area{margin-top:16px;}
+  .response-shell{
+    position:relative; border:1px solid var(--line); background:#fbfcfb; border-radius:2px;
+    padding:14px 16px 16px; min-height:44px;
+  }
+  .response-shell.empty::before{
+    content:"No request sent yet.";
+    color:#9aa4a4; font-size:12.5px; font-style:italic;
+  }
+  .stamp{
+    position:absolute; top:10px; right:16px;
+    font-family:var(--stamp); border:3px solid; border-radius:8px;
+    padding:5px 12px; font-size:15px; letter-spacing:1px;
+    transform:rotate(-6deg);
+    opacity:0.92;
+    pointer-events:none;
+  }
+  .stamp.ok{color:var(--pass); border-color:var(--pass); background:var(--pass-bg);}
+  .stamp.fail{color:var(--pen); border-color:var(--pen); background:var(--fail-bg);}
+  .stamp.pending{color:var(--ink-soft); border-color:var(--ink-soft); background:#eee;}
+
+  .response-meta{font-family:var(--mono); font-size:11.5px; color:var(--ink-soft); margin-bottom:8px; padding-right:120px;}
+  pre.response-body{
+    font-family:var(--mono); font-size:12.5px; margin:0; white-space:pre-wrap; word-break:break-word;
+    max-height:340px; overflow:auto; padding-right:120px;
+  }
+
+  footer{
+    max-width:1180px; margin:0 auto; padding:10px 28px 60px; color:var(--ink-soft); font-size:12px;
+  }
+
+  @media (max-width: 860px){
+    .layout{grid-template-columns:1fr;}
+    nav.toc{position:static; padding:16px 20px 4px;}
+    .field-grid{grid-template-columns:1fr;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+
+<header class="masthead">
+  <div class="masthead-title">
+    <h1>QuizEngine — API Test Booklet</h1>
+    <p>Booklet No. <span class="booklet-no">QE-01</span> · every endpoint, one form each. Fill in, submit, read the mark.</p>
+  </div>
+  <form class="base-url-form" id="baseUrlForm">
+    <label for="baseUrl">Base URL</label>
+    <input id="baseUrl" name="baseUrl" type="text" value="http://localhost:8082" spellcheck="false">
+    <button type="submit">Save</button>
+    <span class="conn-status" id="connStatus"><span class="conn-dot" id="connDot"></span>not checked</span>
+  </form>
+</header>
+
+<div class="layout">
+  <nav class="toc" aria-label="Endpoint sections">
+    <h2>Contents</h2>
+
+    <div class="section-group">
+      <h3>Section A — People</h3>
+      <ol>
+        <li><a href="#create-user"><span class="bubble"></span>Create user</a></li>
+      </ol>
+    </div>
+
+    <div class="section-group">
+      <h3>Section B — Admin · Quizzes</h3>
+      <ol>
+        <li><a href="#create-quiz"><span class="bubble"></span>Create quiz</a></li>
+        <li><a href="#admin-list-quizzes"><span class="bubble"></span>List quizzes</a></li>
+        <li><a href="#admin-get-quiz"><span class="bubble"></span>Get quiz by id</a></li>
+      </ol>
+    </div>
+
+    <div class="section-group">
+      <h3>Section C — Admin · Questions</h3>
+      <ol>
+        <li><a href="#add-question"><span class="bubble"></span>Add question</a></li>
+        <li><a href="#delete-question"><span class="bubble"></span>Delete question</a></li>
+      </ol>
+    </div>
+
+    <div class="section-group">
+      <h3>Section D — Taking a Quiz</h3>
+      <ol>
+        <li><a href="#list-quizzes"><span class="bubble"></span>Available quizzes</a></li>
+        <li><a href="#get-quiz"><span class="bubble"></span>Quiz detail</a></li>
+        <li><a href="#submit-quiz"><span class="bubble"></span>Submit answers</a></li>
+      </ol>
+    </div>
+  </nav>
+
+  <main id="main-content">
+
+    <!-- ============ CREATE USER ============ -->
+    <section class="card" id="create-user">
+      <div class="card-head">
+        <div>
+          <h2>Create user</h2>
+          <p class="card-endpoint">POST /api/users</p>
+        </div>
+        <span class="method-badge method-POST">POST</span>
+      </div>
+      <div class="card-body">
+        <p class="card-note">Creates an ADMIN or USER account. The returned id auto-fills into the forms below.</p>
+        <form data-form="create-user">
+          <div class="field-grid">
+            <div class="field">
+              <label for="u-name">Name</label>
+              <input id="u-name" name="name" required value="Arshi">
+            </div>
+            <div class="field">
+              <label for="u-role">Role</label>
+              <select id="u-role" name="role">
+                <option value="ADMIN">ADMIN</option>
+                <option value="USER" selected>USER</option>
+              </select>
+            </div>
+            <div class="field span-2">
+              <label for="u-email">Email</label>
+              <input id="u-email" name="email" type="email" required value="arshi@gmail.com">
+            </div>
+          </div>
+          <div class="actions-row">
+            <button class="stamp-btn" type="submit">Send</button>
+            <span class="quickfill">Last created user id: <b id="lastUserIdLabel">—</b></span>
+          </div>
+          <div class="response-area">
+            <div class="response-shell empty" data-response="create-user"></div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ CREATE QUIZ ============ -->
+    <section class="card" id="create-quiz">
+      <div class="card-head">
+        <div>
+          <h2>Create quiz</h2>
+          <p class="card-endpoint">POST /api/admin/quizzes</p>
+        </div>
+        <span class="method-badge method-POST">POST</span>
+      </div>
+      <div class="card-body">
+        <p class="card-note">Requires an existing user id (create an ADMIN above first).</p>
+        <form data-form="create-quiz">
+          <div class="field-grid">
+            <div class="field">
+              <label for="q-title">Title</label>
+              <input id="q-title" name="title" required value="Java Basics">
+            </div>
+            <div class="field">
+              <label for="q-subject">Subject</label>
+              <input id="q-subject" name="subject" required value="Programming">
+            </div>
+            <div class="field">
+              <label for="q-createdBy">Created by (user id)</label>
+              <input id="q-createdBy" name="createdBy" type="number" min="1" required>
+            </div>
+            <div class="field">
+              <label for="q-description">Description</label>
+              <input id="q-description" name="description" value="Basic Java programming">
+            </div>
+          </div>
+          <div class="actions-row">
+            <button class="stamp-btn" type="submit">Send</button>
+            <span class="quickfill">Last created quiz id: <b id="lastQuizIdLabel">—</b></span>
+          </div>
+          <div class="response-area">
+            <div class="response-shell empty" data-response="create-quiz"></div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ ADMIN LIST QUIZZES ============ -->
+    <section class="card" id="admin-list-quizzes">
+      <div class="card-head">
+        <div>
+          <h2>List quizzes (admin)</h2>
+          <p class="card-endpoint">GET /api/admin/quizzes</p>
+        </div>
+        <span class="method-badge method-GET">GET</span>
+      </div>
+      <div class="card-body">
+        <p class="card-note">Includes who created each quiz.</p>
+        <form data-form="admin-list-quizzes">
+          <div class="actions-row">
+            <button class="stamp-btn" type="submit">Send</button>
+          </div>
+          <div class="response-area">
+            <div class="response-shell empty" data-response="admin-list-quizzes"></div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ ADMIN GET QUIZ BY ID ============ -->
+    <section class="card" id="admin-get-quiz">
+      <div class="card-head">
+        <div>
+          <h2>Get quiz by id (admin)</h2>
+          <p class="card-endpoint">GET /api/admin/quizzes/{quizId}</p>
+        </div>
+        <span class="method-badge method-GET">GET</span>
+      </div>
+      <div class="card-body">
+        <form data-form="admin-get-quiz">
+          <div class="field-grid single">
+            <div class="field">
+              <label for="ag-quizId">Quiz id</label>
+              <input id="ag-quizId" name="quizId" type="number" min="1" required>
+            </div>
+          </div>
+          <div class="actions-row">
+            <button class="stamp-btn" type="submit">Send</button>
+          </div>
+          <div class="response-area">
+            <div class="response-shell empty" data-response="admin-get-quiz"></div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ ADD QUESTION ============ -->
+    <section class="card" id="add-question">
+      <div class="card-head">
+        <div>
+          <h2>Add question</h2>
+          <p class="card-endpoint">POST /api/admin/quizzes/{quizId}/questions</p>
+        </div>
+        <span class="method-badge method-POST">POST</span>
+      </div>
+      <div class="card-body">
+        <p class="card-note">SINGLE_CHOICE and TRUE_FALSE need options with exactly one marked correct. ONE_LINE needs a correct answer instead.</p>
+        <form data-form="add-question">
+          <div class="field-grid">
+            <div class="field">
+              <label for="aq-quizId">Quiz id</label>
+              <input id="aq-quizId" name="quizId" type="number" min="1" required>
+            </div>
+            <div class="field">
+              <label for="aq-type">Question type</label>
+              <select id="aq-type" name="questionType">
+                <option value="SINGLE_CHOICE">SINGLE_CHOICE</option>
+                <option value="TRUE_FALSE">TRUE_FALSE</option>
+                <option value="ONE_LINE">ONE_LINE</option>
+              </select>
+            </div>
+            <div class="field span-2">
+              <label for="aq-text">Question text</label>
+              <input id="aq-text" name="questionText" required value="Which keyword is used for inheritance?">
+            </div>
+            <div class="field">
+              <label for="aq-marks">Marks</label>
+              <input id="aq-marks" name="marks" type="number" min="1" value="1" required>
+            </div>
+          </div>
+
+          <div id="aq-options-block">
+            <label class="hint" style="display:block;margin:10px 0 6px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.4px;font-size:12px;">Options</label>
+            <div id="aq-options-rows"></div>
+            <button type="button" class="row-add" id="aq-add-option">+ Add option</button>
+          </div>
+
+          <div id="aq-oneline-block" class="field-grid single" style="display:none; margin-top:10px;">
+            <div class="field">
+              <label for="aq-correctAnswer">Correct answer</label>
+              <input id="aq-correctAnswer" name="correctAnswer" value="Paris">
+            </div>
+          </div>
+
+          <div class="actions-row">
+            <button class="stamp-btn" type="submit">Send</button>
+            <span class="quickfill">Last created question id: <b id="lastQuestionIdLabel">—</b></span>
+          </div>
+          <div class="response-area">
+            <div class="response-shell empty" data-response="add-question"></div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ DELETE QUESTION ============ -->
+    <section class="card" id="delete-question">
+      <div class="card-head">
+        <div>
+          <h2>Delete question</h2>
+          <p class="card-endpoint">DELETE /api/admin/questions/{questionId}</p>
+        </div>
+        <span class="method-badge method-DELETE">DELETE</span>
+      </div>
+      <div class="card-body">
+        <form data-form="delete-question">
+          <div class="field-grid single">
+            <div class="field">
+              <label for="dq-questionId">Question id</label>
+              <input id="dq-questionId" name="questionId" type="number" min="1" required>
+            </div>
+          </div>
+          <div class="actions-row">
+            <button class="stamp-btn" type="submit">Send</button>
+          </div>
+          <div class="response-area">
+            <div class="response-shell empty" data-response="delete-question"></div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ LIST QUIZZES (USER) ============ -->
+    <section class="card" id="list-quizzes">
+      <div class="card-head">
+        <div>
+          <h2>Available quizzes</h2>
+          <p class="card-endpoint">GET /api/quizzes</p>
+        </div>
+        <span class="method-badge method-GET">GET</span>
+      </div>
+      <div class="card-body">
+        <p class="card-note">Basic info only — no questions, no creator.</p>
+        <form data-form="list-quizzes">
+          <div class="actions-row">
+            <button class="stamp-btn" type="submit">Send</button>
+          </div>
+          <div class="response-area">
+            <div class="response-shell empty" data-response="list-quizzes"></div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ GET QUIZ DETAIL ============ -->
+    <section class="card" id="get-quiz">
+      <div class="card-head">
+        <div>
+          <h2>Quiz detail</h2>
+          <p class="card-endpoint">GET /api/quizzes/{quizId}</p>
+        </div>
+        <span class="method-badge method-GET">GET</span>
+      </div>
+      <div class="card-body">
+        <p class="card-note">Sanitized for test-takers: options come back without which one is correct.</p>
+        <form data-form="get-quiz">
+          <div class="field-grid single">
+            <div class="field">
+              <label for="gq-quizId">Quiz id</label>
+              <input id="gq-quizId" name="quizId" type="number" min="1" required>
+            </div>
+          </div>
+          <div class="actions-row">
+            <button class="stamp-btn" type="submit">Send</button>
+          </div>
+          <div class="response-area">
+            <div class="response-shell empty" data-response="get-quiz"></div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ SUBMIT QUIZ ============ -->
+    <section class="card" id="submit-quiz">
+      <div class="card-head">
+        <div>
+          <h2>Submit answers</h2>
+          <p class="card-endpoint">POST /api/quizzes/{quizId}/submit</p>
+        </div>
+        <span class="method-badge method-POST">POST</span>
+      </div>
+      <div class="card-body">
+        <p class="card-note">For SINGLE_CHOICE, the answer is the chosen option's id (see "Quiz detail" above). For TRUE_FALSE use "True"/"False". Matching is case-insensitive for ONE_LINE and TRUE_FALSE.</p>
+        <form data-form="submit-quiz">
+          <div class="field-grid">
+            <div class="field">
+              <label for="sq-quizId">Quiz id</label>
+              <input id="sq-quizId" name="quizId" type="number" min="1" required>
+            </div>
+            <div class="field">
+              <label for="sq-userId">User id</label>
+              <input id="sq-userId" name="userId" type="number" min="1" required>
+            </div>
+          </div>
+
+          <label class="hint" style="display:block;margin:10px 0 6px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.4px;font-size:12px;">Answers</label>
+          <div id="sq-answers-rows"></div>
+          <button type="button" class="row-add" id="sq-add-answer">+ Add answer</button>
+
+          <div class="actions-row">
+            <button class="stamp-btn" type="submit">Send</button>
+          </div>
+          <div class="response-area">
+            <div class="response-shell empty" data-response="submit-quiz"></div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  Runs entirely in your browser and calls the API directly — nothing is sent anywhere else. If requests fail immediately, confirm the backend is running and the Base URL above is correct.
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  var state = { baseUrl: document.getElementById('baseUrl').value.replace(/\/$/, '') };
+
+  // ---------- Base URL + connection check ----------
+  var baseUrlForm = document.getElementById('baseUrlForm');
+  var connDot = document.getElementById('connDot');
+  var connStatus = document.getElementById('connStatus');
+
+  function setConn(kind, text){
+    connDot.className = 'conn-dot' + (kind ? ' ' + kind : '');
+    connStatus.lastChild.textContent = text;
+  }
+
+  function checkConnection(){
+    setConn('', 'checking…');
+    fetch(state.baseUrl + '/api/quizzes')
+      .then(function(res){ setConn(res.ok ? 'ok' : 'bad', 'HTTP ' + res.status); })
+      .catch(function(){ setConn('bad', 'unreachable (CORS or server down)'); });
+  }
+
+  baseUrlForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var val = document.getElementById('baseUrl').value.trim().replace(/\/$/, '');
+    if(val){ state.baseUrl = val; checkConnection(); }
+  });
+
+  checkConnection();
+
+  // ---------- Generic request + response rendering ----------
+  function renderPending(key){
+    var shell = document.querySelector('[data-response="' + key + '"]');
+    shell.classList.remove('empty');
+    shell.innerHTML = '<div class="stamp pending">SENDING</div><div class="response-meta">…</div>';
+  }
+
+  function renderResult(key, ok, statusLabel, meta, bodyText){
+    var shell = document.querySelector('[data-response="' + key + '"]');
+    shell.classList.remove('empty');
+    var stampClass = ok ? 'ok' : 'fail';
+    shell.innerHTML =
+      '<div class="stamp ' + stampClass + '">' + statusLabel + '</div>' +
+      '<div class="response-meta">' + meta + '</div>' +
+      '<pre class="response-body"></pre>';
+    shell.querySelector('.response-body').textContent = bodyText;
+  }
+
+  function sendRequest(key, method, path, bodyObj){
+    renderPending(key);
+    var started = performance.now();
+    var opts = { method: method, headers: {} };
+    if(bodyObj !== undefined){
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(bodyObj);
+    }
+    return fetch(state.baseUrl + path, opts)
+      .then(function(res){
+        var elapsed = Math.round(performance.now() - started);
+        return res.text().then(function(text){
+          var pretty = text;
+          try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch(e){ /* not JSON, leave as-is */ }
+          var meta = method + ' ' + path + '  ·  ' + elapsed + 'ms';
+          renderResult(key, res.ok, res.status + ' ' + (res.statusText || ''), meta, pretty || '(empty body)');
+          return { ok: res.ok, status: res.status, json: (function(){ try { return JSON.parse(text); } catch(e){ return null; } })() };
+        });
+      })
+      .catch(function(err){
+        var elapsed = Math.round(performance.now() - started);
+        renderResult(key, false, 'NETWORK ERROR', method + ' ' + path + '  ·  ' + elapsed + 'ms',
+          String(err) + '\n\nCheck that the backend is running at ' + state.baseUrl + ' and that CORS is enabled.');
+        return { ok: false, status: 0, json: null };
+      });
+  }
+
+  function withDisabledButton(form, promiseFactory){
+    var btn = form.querySelector('.stamp-btn');
+    btn.disabled = true;
+    return promiseFactory().finally(function(){ btn.disabled = false; });
+  }
+
+  // ---------- Quick-fill helpers ----------
+  function fillAll(selector, value){
+    document.querySelectorAll(selector).forEach(function(el){ el.value = value; });
+  }
+
+  // ---------- Create user ----------
+  document.querySelector('[data-form="create-user"]').addEventListener('submit', function(e){
+    e.preventDefault();
+    var form = e.target;
+    var body = {
+      name: document.getElementById('u-name').value,
+      email: document.getElementById('u-email').value,
+      role: document.getElementById('u-role').value
+    };
+    withDisabledButton(form, function(){
+      return sendRequest('create-user', 'POST', '/api/users', body).then(function(r){
+        if(r.ok && r.json && r.json.id){
+          document.getElementById('lastUserIdLabel').textContent = r.json.id;
+          fillAll('#q-createdBy, #sq-userId', r.json.id);
+        }
+      });
+    });
+  });
+
+  // ---------- Create quiz ----------
+  document.querySelector('[data-form="create-quiz"]').addEventListener('submit', function(e){
+    e.preventDefault();
+    var form = e.target;
+    var body = {
+      title: document.getElementById('q-title').value,
+      description: document.getElementById('q-description').value,
+      subject: document.getElementById('q-subject').value,
+      createdBy: Number(document.getElementById('q-createdBy').value)
+    };
+    withDisabledButton(form, function(){
+      return sendRequest('create-quiz', 'POST', '/api/admin/quizzes', body).then(function(r){
+        if(r.ok && r.json && r.json.id){
+          document.getElementById('lastQuizIdLabel').textContent = r.json.id;
+          fillAll('#ag-quizId, #aq-quizId, #gq-quizId, #sq-quizId', r.json.id);
+        }
+      });
+    });
+  });
+
+  // ---------- Admin list / get quiz ----------
+  document.querySelector('[data-form="admin-list-quizzes"]').addEventListener('submit', function(e){
+    e.preventDefault();
+    withDisabledButton(e.target, function(){ return sendRequest('admin-list-quizzes', 'GET', '/api/admin/quizzes'); });
+  });
+
+  document.querySelector('[data-form="admin-get-quiz"]').addEventListener('submit', function(e){
+    e.preventDefault();
+    var quizId = document.getElementById('ag-quizId').value;
+    withDisabledButton(e.target, function(){ return sendRequest('admin-get-quiz', 'GET', '/api/admin/quizzes/' + quizId); });
+  });
+
+  // ---------- Add question (dynamic options) ----------
+  var optionsRows = document.getElementById('aq-options-rows');
+  var optionRowCount = 0;
+
+  function addOptionRow(text, correct){
+    optionRowCount++;
+    var row = document.createElement('div');
+    row.className = 'option-row';
+    row.innerHTML =
+      '<input type="text" class="opt-text" placeholder="Option text" value="' + (text || '') + '">' +
+      '<label class="chk"><input type="checkbox" class="opt-correct"' + (correct ? ' checked' : '') + '> correct</label>' +
+      '<button type="button" class="row-remove" aria-label="Remove option">✕</button>';
+    row.querySelector('.row-remove').addEventListener('click', function(){ row.remove(); });
+    optionsRows.appendChild(row);
+  }
+
+  document.getElementById('aq-add-option').addEventListener('click', function(){ addOptionRow('', false); });
+
+  function resetOptionsForType(type){
+    optionsRows.innerHTML = '';
+    var optionsBlock = document.getElementById('aq-options-block');
+    var oneLineBlock = document.getElementById('aq-oneline-block');
+    if(type === 'SINGLE_CHOICE'){
+      optionsBlock.style.display = '';
+      oneLineBlock.style.display = 'none';
+      addOptionRow('extends', true);
+      addOptionRow('implements', false);
+      addOptionRow('inherits', false);
+      addOptionRow('super', false);
+    } else if(type === 'TRUE_FALSE'){
+      optionsBlock.style.display = '';
+      oneLineBlock.style.display = 'none';
+      addOptionRow('True', true);
+      addOptionRow('False', false);
+    } else {
+      optionsBlock.style.display = 'none';
+      oneLineBlock.style.display = '';
+    }
+  }
+
+  document.getElementById('aq-type').addEventListener('change', function(e){ resetOptionsForType(e.target.value); });
+  resetOptionsForType('SINGLE_CHOICE');
+
+  document.querySelector('[data-form="add-question"]').addEventListener('submit', function(e){
+    e.preventDefault();
+    var form = e.target;
+    var quizId = document.getElementById('aq-quizId').value;
+    var type = document.getElementById('aq-type').value;
+    var body = {
+      questionText: document.getElementById('aq-text').value,
+      questionType: type,
+      marks: Number(document.getElementById('aq-marks').value)
+    };
+    if(type === 'ONE_LINE'){
+      body.correctAnswer = document.getElementById('aq-correctAnswer').value;
+    } else {
+      body.options = Array.prototype.map.call(optionsRows.querySelectorAll('.option-row'), function(row){
+        return {
+          optionText: row.querySelector('.opt-text').value,
+          isCorrect: row.querySelector('.opt-correct').checked
+        };
+      });
+    }
+    withDisabledButton(form, function(){
+      return sendRequest('add-question', 'POST', '/api/admin/quizzes/' + quizId + '/questions', body).then(function(r){
+        if(r.ok && r.json && r.json.id){
+          document.getElementById('lastQuestionIdLabel').textContent = r.json.id;
+          document.getElementById('dq-questionId').value = r.json.id;
+        }
+      });
+    });
+  });
+
+  // ---------- Delete question ----------
+  document.querySelector('[data-form="delete-question"]').addEventListener('submit', function(e){
+    e.preventDefault();
+    var questionId = document.getElementById('dq-questionId').value;
+    withDisabledButton(e.target, function(){ return sendRequest('delete-question', 'DELETE', '/api/admin/questions/' + questionId); });
+  });
+
+  // ---------- List quizzes (user) / get quiz detail ----------
+  document.querySelector('[data-form="list-quizzes"]').addEventListener('submit', function(e){
+    e.preventDefault();
+    withDisabledButton(e.target, function(){ return sendRequest('list-quizzes', 'GET', '/api/quizzes'); });
+  });
+
+  document.querySelector('[data-form="get-quiz"]').addEventListener('submit', function(e){
+    e.preventDefault();
+    var quizId = document.getElementById('gq-quizId').value;
+    withDisabledButton(e.target, function(){ return sendRequest('get-quiz', 'GET', '/api/quizzes/' + quizId); });
+  });
+
+  // ---------- Submit quiz (dynamic answers) ----------
+  var answersRows = document.getElementById('sq-answers-rows');
+
+  function addAnswerRow(questionId, answer){
+    var row = document.createElement('div');
+    row.className = 'answer-row';
+    row.innerHTML =
+      '<input type="number" min="1" class="ans-qid" placeholder="Question id" value="' + (questionId || '') + '">' +
+      '<input type="text" class="ans-value" placeholder="Answer (option id / True / text)" value="' + (answer || '') + '">' +
+      '<button type="button" class="row-remove" aria-label="Remove answer">✕</button>';
+    row.querySelector('.row-remove').addEventListener('click', function(){ row.remove(); });
+    answersRows.appendChild(row);
+  }
+
+  document.getElementById('sq-add-answer').addEventListener('click', function(){ addAnswerRow('', ''); });
+  addAnswerRow('', '');
+
+  document.querySelector('[data-form="submit-quiz"]').addEventListener('submit', function(e){
+    e.preventDefault();
+    var form = e.target;
+    var quizId = document.getElementById('sq-quizId').value;
+    var body = {
+      userId: Number(document.getElementById('sq-userId').value),
+      answers: Array.prototype.map.call(answersRows.querySelectorAll('.answer-row'), function(row){
+        return {
+          questionId: Number(row.querySelector('.ans-qid').value),
+          answer: row.querySelector('.ans-value').value
+        };
+      }).filter(function(a){ return a.questionId && a.answer; })
+    };
+    withDisabledButton(form, function(){ return sendRequest('submit-quiz', 'POST', '/api/quizzes/' + quizId + '/submit', body); });
+  });
+
+})();
+</script>
+</body>
+</html>
