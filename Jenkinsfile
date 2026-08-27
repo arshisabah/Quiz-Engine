@@ -716,126 +716,27 @@ pipeline {
         // =====================================================
 
         stage('Run Playwright Tests') {
-
+        
             steps {
-
+        
                 echo '============================================'
                 echo 'RUNNING PLAYWRIGHT TESTS'
                 echo '============================================'
-
-
-                bat '''
-
-                    cd /D "%PLAYWRIGHT_DIR%"
-
-
-                    echo.
-                    echo ============================================
-                    echo PLAYWRIGHT DIRECTORY
-                    echo ============================================
-
-                    cd
-
-
-                    echo.
-                    echo ============================================
-                    echo NODE VERSION
-                    echo ============================================
-
-                    node -v
-
-
-                    echo.
-                    echo ============================================
-                    echo NPM VERSION
-                    echo ============================================
-
-                    npm -v
-
-
-                    echo.
-                    echo ============================================
-                    echo INSTALLING NODE DEPENDENCIES
-                    echo ============================================
-
-                    npm ci
-
-                    if errorlevel 1 (
-
-                        echo ERROR: npm ci failed
-
-                        exit /b 1
-                    )
-
-
-                    echo.
-                    echo ============================================
-                    echo CHECKING PLAYWRIGHT
-                    echo ============================================
-
-                    npx playwright --version
-
-                    if errorlevel 1 (
-
-                        echo ERROR: Playwright is not available
-
-                        exit /b 1
-                    )
-
-
-                    echo.
-                    echo ============================================
-                    echo INSTALLING CHROMIUM
-                    echo ============================================
-
-                    npx playwright install chromium
-
-                    if errorlevel 1 (
-
-                        echo ERROR: Chromium installation failed
-
-                        exit /b 1
-                    )
-
-
-                    echo.
-                    echo ============================================
-                    echo CLEANING OLD RESULTS
-                    echo ============================================
-
-                    if exist "playwright-report" (
-                        rmdir /S /Q "playwright-report"
-                    )
-
-
-                    if exist "test-results" (
-                        rmdir /S /Q "test-results"
-                    )
-
-
-                    echo.
-                    echo ============================================
-                    echo STARTING PLAYWRIGHT TEST
-                    echo ============================================
-
-                    npx playwright test
-
-                    if errorlevel 1 (
-
-                        echo.
-                        echo ============================================
-                        echo PLAYWRIGHT TEST FAILED
-                        echo ============================================
-
-                        exit /b 1
-                    )
-
-
-                    echo.
-                    echo ============================================
-                    echo PLAYWRIGHT TEST PASSED
-                    echo ============================================
-                '''
+        
+                bat 'cd /D "D:\\Deployment\\scripts" && echo PLAYWRIGHT DIRECTORY && cd'
+        
+                bat 'cd /D "D:\\Deployment\\scripts" && echo NODE VERSION && node -v'
+        
+                bat 'cd /D "D:\\Deployment\\scripts" && echo NPM VERSION && npm -v'
+        
+                bat 'cd /D "D:\\Deployment\\scripts" && echo PLAYWRIGHT VERSION && npx playwright --version'
+        
+                bat 'cd /D "D:\\Deployment\\scripts" && echo INSTALLING DEPENDENCIES && npm ci'
+        
+                bat 'cd /D "D:\\Deployment\\scripts" && echo INSTALLING CHROMIUM && npx playwright install chromium'
+        
+                bat 'cd /D "D:\\Deployment\\scripts" && echo STARTING PLAYWRIGHT TEST && npx playwright test'
+        
             }
         }
 
