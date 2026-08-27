@@ -9,10 +9,8 @@ pipeline {
 
     options {
 
-        // We perform our own Git checkout
         skipDefaultCheckout(true)
 
-        // Maximum pipeline execution time
         timeout(time: 20, unit: 'MINUTES')
     }
 
@@ -22,10 +20,6 @@ pipeline {
     // =========================================================
 
     environment {
-
-        // -----------------------------------------------------
-        // DEPLOYMENT
-        // -----------------------------------------------------
 
         DEPLOYMENT_DIR = 'D:\\Deployment'
 
@@ -132,25 +126,21 @@ pipeline {
                 bat '''
                     echo.
                     echo ==================== JAVA ====================
-
                     java -version
 
 
                     echo.
                     echo ==================== MAVEN ====================
-
                     mvn -version
 
 
                     echo.
                     echo ==================== NODE ====================
-
                     node -v
 
 
                     echo.
                     echo ==================== NPM ====================
-
                     npm -v
 
 
@@ -163,8 +153,7 @@ pipeline {
                         exit /b 1
                     )
 
-                    echo Tomcat found:
-                    echo %TOMCAT_HOME%
+                    echo Tomcat found.
 
 
                     echo.
@@ -172,23 +161,21 @@ pipeline {
 
                     if not exist "%APPZILLON_SERVER_WAR%" (
                         echo ERROR: AppzillonServer.war not found
-                        echo %APPZILLON_SERVER_WAR%
                         exit /b 1
                     )
 
-                    echo AppzillonServer.war found
+                    echo AppzillonServer.war found.
 
 
                     echo.
-                    echo ==================== QUIZAPP ====================
+                    echo ==================== QUIZAPP WAR ====================
 
                     if not exist "%QUIZAPP_WAR%" (
                         echo ERROR: quizapp.war not found
-                        echo %QUIZAPP_WAR%
                         exit /b 1
                     )
 
-                    echo quizapp.war found
+                    echo quizapp.war found.
 
 
                     echo.
@@ -196,39 +183,30 @@ pipeline {
 
                     if not exist "%PLAYWRIGHT_DIR%" (
                         echo ERROR: Playwright directory not found
-                        echo %PLAYWRIGHT_DIR%
                         exit /b 1
                     )
 
                     if not exist "%PLAYWRIGHT_DIR%\\package.json" (
                         echo ERROR: package.json not found
-                        echo %PLAYWRIGHT_DIR%\\package.json
                         exit /b 1
                     )
 
                     if not exist "%PLAYWRIGHT_DIR%\\package-lock.json" (
                         echo ERROR: package-lock.json not found
-                        echo %PLAYWRIGHT_DIR%\\package-lock.json
                         exit /b 1
                     )
 
                     if not exist "%PLAYWRIGHT_DIR%\\tests" (
-                        echo ERROR: Playwright tests directory not found
-                        echo %PLAYWRIGHT_DIR%\\tests
+                        echo ERROR: tests directory not found
                         exit /b 1
                     )
 
                     echo Playwright project found.
 
 
-                    echo.
-                    echo ==================== DEPLOYMENT ====================
-
                     if not exist "%BACKEND_DIR%" (
                         mkdir "%BACKEND_DIR%"
                     )
-
-                    echo Environment check completed successfully.
                 '''
             }
         }
@@ -271,21 +249,16 @@ pipeline {
                         exit /b 1
                     )
 
-
                     copy /Y ^
                     "target\\quizapp-0.0.1-SNAPSHOT.jar" ^
                     "%BACKEND_JAR%"
-
 
                     if not exist "%BACKEND_JAR%" (
                         echo ERROR: Backend JAR copy failed.
                         exit /b 1
                     )
 
-
-                    echo.
-                    echo Backend JAR copied successfully:
-                    echo %BACKEND_JAR%
+                    echo Backend JAR copied successfully.
                 '''
             }
         }
@@ -308,7 +281,7 @@ pipeline {
 
                     powershell.exe -NoProfile -Command "Start-Sleep -Seconds 3"
 
-                    echo Old backend stopped.
+                    echo Backend stopped.
                 '''
             }
         }
@@ -323,32 +296,22 @@ pipeline {
             steps {
 
                 echo '============================================'
-                echo 'STARTING SPRING BOOT BACKEND'
+                echo 'STARTING BACKEND'
                 echo 'PORT: 8082'
                 echo '============================================'
 
                 bat '''
-                    if exist "%BACKEND_LOG%" (
-                        del /F /Q "%BACKEND_LOG%"
-                    )
+                    if exist "%BACKEND_LOG%" del /F /Q "%BACKEND_LOG%"
 
-                    if exist "%BACKEND_ERROR_LOG%" (
-                        del /F /Q "%BACKEND_ERROR_LOG%"
-                    )
+                    if exist "%BACKEND_ERROR_LOG%" del /F /Q "%BACKEND_ERROR_LOG%"
 
-                    if exist "%BACKEND_PID%" (
-                        del /F /Q "%BACKEND_PID%"
-                    )
+                    if exist "%BACKEND_PID%" del /F /Q "%BACKEND_PID%"
 
 
                     set JENKINS_NODE_COOKIE=dontKillMe
 
 
                     powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$p = Start-Process -FilePath 'java' -ArgumentList '-jar','%BACKEND_JAR%' -WorkingDirectory '%BACKEND_DIR%' -RedirectStandardOutput '%BACKEND_LOG%' -RedirectStandardError '%BACKEND_ERROR_LOG%' -PassThru; Set-Content '%BACKEND_PID%' $p.Id; Write-Host ('Backend started with PID: ' + $p.Id)"
-
-
-                    echo.
-                    echo Backend start command completed.
                 '''
             }
         }
@@ -363,18 +326,18 @@ pipeline {
             steps {
 
                 echo '============================================'
-                echo 'WAITING FOR BACKEND'
-                echo 'PORT: 8082'
+                echo 'WAITING FOR BACKEND :8082'
                 echo '============================================'
 
                 timeout(time: 90, unit: 'SECONDS') {
 
                     powershell '''
+
                         $ready = $false
 
                         for ($i = 0; $i -lt 18; $i++) {
 
-                            Write-Host "Checking backend on port 8082..."
+                            Write-Host "Checking backend..."
 
                             $result = Test-NetConnection `
                                 -ComputerName "localhost" `
@@ -383,26 +346,18 @@ pipeline {
 
                             if ($result.TcpTestSucceeded) {
 
-                                Write-Host ""
-                                Write-Host "============================================"
-                                Write-Host "BACKEND IS UP"
-                                Write-Host "PORT: 8082"
-                                Write-Host "============================================"
+                                Write-Host "BACKEND IS UP ON 8082"
 
                                 $ready = $true
                                 break
                             }
-
-                            Write-Host "Backend not ready."
-                            Write-Host "Waiting 5 seconds..."
 
                             Start-Sleep -Seconds 5
                         }
 
                         if (-not $ready) {
 
-                            Write-Host ""
-                            Write-Host "Backend failed to start."
+                            Write-Error "Backend failed to start."
 
                             exit 1
                         }
@@ -425,6 +380,7 @@ pipeline {
                 echo '============================================'
 
                 bat '''
+
                     call "%TOMCAT_HOME%\\bin\\shutdown.bat"
 
                     powershell.exe -NoProfile -Command "Start-Sleep -Seconds 10"
@@ -436,7 +392,7 @@ pipeline {
 
 
         // =====================================================
-        // 9. CLEAN OLD TOMCAT DEPLOYMENT
+        // 9. CLEAN TOMCAT
         // =====================================================
 
         stage('Clean Tomcat') {
@@ -444,51 +400,35 @@ pipeline {
             steps {
 
                 echo '============================================'
-                echo 'CLEANING OLD TOMCAT DEPLOYMENT'
+                echo 'CLEANING OLD APPZILLON DEPLOYMENT'
                 echo '============================================'
 
                 bat '''
-                    echo.
-                    echo Removing old AppzillonServer.war...
 
                     if exist "%TOMCAT_WEBAPPS%\\AppzillonServer.war" (
                         del /F /Q "%TOMCAT_WEBAPPS%\\AppzillonServer.war"
                     )
 
-
-                    echo.
-                    echo Removing old quizapp.war...
-
                     if exist "%TOMCAT_WEBAPPS%\\quizapp.war" (
                         del /F /Q "%TOMCAT_WEBAPPS%\\quizapp.war"
                     )
-
-
-                    echo.
-                    echo Removing old AppzillonServer directory...
 
                     if exist "%TOMCAT_WEBAPPS%\\AppzillonServer" (
                         rmdir /S /Q "%TOMCAT_WEBAPPS%\\AppzillonServer"
                     )
 
-
-                    echo.
-                    echo Removing old quizapp directory...
-
                     if exist "%TOMCAT_WEBAPPS%\\quizapp" (
                         rmdir /S /Q "%TOMCAT_WEBAPPS%\\quizapp"
                     )
 
-
-                    echo.
-                    echo Old deployment cleaned.
+                    echo Old Appzillon deployment cleaned.
                 '''
             }
         }
 
 
         // =====================================================
-        // 10. DEPLOY APPZILLON WAR FILES
+        // 10. DEPLOY APPZILLON
         // =====================================================
 
         stage('Deploy Appzillon') {
@@ -496,42 +436,33 @@ pipeline {
             steps {
 
                 echo '============================================'
-                echo 'DEPLOYING APPZILLON WAR FILES'
+                echo 'DEPLOYING APPZILLON'
                 echo '============================================'
 
                 bat '''
-                    echo.
-                    echo Copying AppzillonServer.war...
 
                     copy /Y ^
                     "%APPZILLON_SERVER_WAR%" ^
                     "%TOMCAT_WEBAPPS%\\AppzillonServer.war"
 
-
                     if errorlevel 1 (
-                        echo ERROR: Failed to copy AppzillonServer.war
+                        echo ERROR: AppzillonServer.war copy failed
                         exit /b 1
                     )
 
-
-                    echo.
-                    echo Copying quizapp.war...
 
                     copy /Y ^
                     "%QUIZAPP_WAR%" ^
                     "%TOMCAT_WEBAPPS%\\quizapp.war"
 
-
                     if errorlevel 1 (
-                        echo ERROR: Failed to copy quizapp.war
+                        echo ERROR: quizapp.war copy failed
                         exit /b 1
                     )
 
 
                     echo.
-                    echo ============================================
-                    echo APPZILLON WAR FILES DEPLOYED
-                    echo ============================================
+                    echo Appzillon WAR files deployed.
                 '''
             }
         }
@@ -546,18 +477,17 @@ pipeline {
             steps {
 
                 echo '============================================'
-                echo 'STARTING TOMCAT'
-                echo 'PORT: 8084'
+                echo 'STARTING TOMCAT :8084'
                 echo '============================================'
 
                 bat '''
+
                     set JENKINS_NODE_COOKIE=dontKillMe
 
                     call "%TOMCAT_HOME%\\bin\\startup.bat"
 
                     powershell.exe -NoProfile -Command "Start-Sleep -Seconds 20"
 
-                    echo.
                     echo Tomcat start command completed.
                 '''
             }
@@ -573,18 +503,18 @@ pipeline {
             steps {
 
                 echo '============================================'
-                echo 'WAITING FOR TOMCAT'
-                echo 'PORT: 8084'
+                echo 'WAITING FOR TOMCAT :8084'
                 echo '============================================'
 
                 timeout(time: 90, unit: 'SECONDS') {
 
                     powershell '''
+
                         $ready = $false
 
                         for ($i = 0; $i -lt 18; $i++) {
 
-                            Write-Host "Checking Tomcat on port 8084..."
+                            Write-Host "Checking Tomcat..."
 
                             $result = Test-NetConnection `
                                 -ComputerName "localhost" `
@@ -595,24 +525,19 @@ pipeline {
 
                                 Write-Host ""
                                 Write-Host "============================================"
-                                Write-Host "TOMCAT IS UP"
-                                Write-Host "PORT: 8084"
+                                Write-Host "TOMCAT IS UP ON PORT 8084"
                                 Write-Host "============================================"
 
                                 $ready = $true
                                 break
                             }
 
-                            Write-Host "Tomcat not ready."
-                            Write-Host "Waiting 5 seconds..."
-
                             Start-Sleep -Seconds 5
                         }
 
                         if (-not $ready) {
 
-                            Write-Host ""
-                            Write-Host "Tomcat failed to start."
+                            Write-Error "Tomcat failed to start."
 
                             exit 1
                         }
@@ -623,55 +548,27 @@ pipeline {
 
 
         // =====================================================
-        // 13. WAIT FOR APPZILLON DEPLOYMENT
+        // 13. WAIT FOR APPZILLON
         // =====================================================
 
-        stage('Wait For Appzillon Deployment') {
+        stage('Wait For Appzillon') {
 
             steps {
 
                 echo '============================================'
-                echo 'WAITING FOR APPZILLON DEPLOYMENT'
+                echo 'WAITING FOR APPZILLON'
                 echo '============================================'
 
-                timeout(time: 90, unit: 'SECONDS') {
+                powershell '''
 
-                    powershell '''
-                        $quizappReady = $false
-                        $serverReady = $false
+                    Write-Host "Tomcat is running."
+                    Write-Host "Waiting for Appzillon applications to initialize..."
 
-                        for ($i = 0; $i -lt 18; $i++) {
+                    Start-Sleep -Seconds 20
 
-                            if (
-                                (Test-Path "$env:TOMCAT_WEBAPPS\\quizapp") -and
-                                (Test-Path "$env:TOMCAT_WEBAPPS\\AppzillonServer")
-                            ) {
-
-                                Write-Host ""
-                                Write-Host "============================================"
-                                Write-Host "APPZILLON APPLICATIONS DEPLOYED"
-                                Write-Host "============================================"
-
-                                $quizappReady = $true
-                                $serverReady = $true
-
-                                break
-                            }
-
-                            Write-Host "Waiting for Tomcat to unpack WAR files..."
-
-                            Start-Sleep -Seconds 5
-                        }
-
-                        if (-not $quizappReady -or -not $serverReady) {
-
-                            Write-Host ""
-                            Write-Host "ERROR: Appzillon WAR files were not unpacked."
-
-                            exit 1
-                        }
-                    '''
-                }
+                    Write-Host ""
+                    Write-Host "Appzillon initialization wait completed."
+                '''
             }
         }
 
@@ -685,14 +582,13 @@ pipeline {
             steps {
 
                 echo '============================================'
-                echo 'FINAL DEPLOYMENT VERIFICATION'
+                echo 'VERIFYING DEPLOYMENT'
                 echo '============================================'
 
                 powershell '''
+
                     Write-Host ""
-                    Write-Host "============================================"
-                    Write-Host "CHECKING BACKEND :8082"
-                    Write-Host "============================================"
+                    Write-Host "Checking Backend :8082..."
 
                     $backend = Test-NetConnection `
                         -ComputerName "localhost" `
@@ -701,7 +597,7 @@ pipeline {
 
                     if (-not $backend.TcpTestSucceeded) {
 
-                        Write-Error "Backend is NOT running on port 8082"
+                        Write-Error "Backend is not running."
                         exit 1
                     }
 
@@ -709,9 +605,7 @@ pipeline {
 
 
                     Write-Host ""
-                    Write-Host "============================================"
-                    Write-Host "CHECKING TOMCAT :8084"
-                    Write-Host "============================================"
+                    Write-Host "Checking Tomcat :8084..."
 
                     $tomcat = Test-NetConnection `
                         -ComputerName "localhost" `
@@ -720,7 +614,7 @@ pipeline {
 
                     if (-not $tomcat.TcpTestSucceeded) {
 
-                        Write-Error "Tomcat is NOT running on port 8084"
+                        Write-Error "Tomcat is not running."
                         exit 1
                     }
 
@@ -728,59 +622,27 @@ pipeline {
 
 
                     Write-Host ""
-                    Write-Host "============================================"
-                    Write-Host "CHECKING APPZILLON SERVER WAR"
-                    Write-Host "============================================"
+                    Write-Host "Checking WAR files..."
 
                     if (-not (Test-Path "$env:TOMCAT_WEBAPPS\\AppzillonServer.war")) {
 
-                        Write-Error "AppzillonServer.war not found"
+                        Write-Error "AppzillonServer.war missing."
+                        exit 1
+                    }
+
+                    if (-not (Test-Path "$env:TOMCAT_WEBAPPS\\quizapp.war")) {
+
+                        Write-Error "quizapp.war missing."
                         exit 1
                     }
 
                     Write-Host "AppzillonServer.war -> OK"
-
-
-                    Write-Host ""
-                    Write-Host "============================================"
-                    Write-Host "CHECKING QUIZAPP WAR"
-                    Write-Host "============================================"
-
-                    if (-not (Test-Path "$env:TOMCAT_WEBAPPS\\quizapp.war")) {
-
-                        Write-Error "quizapp.war not found"
-                        exit 1
-                    }
-
                     Write-Host "quizapp.war -> OK"
 
 
                     Write-Host ""
                     Write-Host "============================================"
-                    Write-Host "CHECKING DEPLOYED APPLICATION DIRECTORIES"
-                    Write-Host "============================================"
-
-                    if (-not (Test-Path "$env:TOMCAT_WEBAPPS\\AppzillonServer")) {
-
-                        Write-Error "AppzillonServer application directory not found"
-                        exit 1
-                    }
-
-                    Write-Host "AppzillonServer directory -> OK"
-
-
-                    if (-not (Test-Path "$env:TOMCAT_WEBAPPS\\quizapp")) {
-
-                        Write-Error "quizapp application directory not found"
-                        exit 1
-                    }
-
-                    Write-Host "quizapp directory -> OK"
-
-
-                    Write-Host ""
-                    Write-Host "============================================"
-                    Write-Host "DEPLOYMENT SUCCESSFUL"
+                    Write-Host "DEPLOYMENT CHECK PASSED"
                     Write-Host "============================================"
                 '''
             }
@@ -800,8 +662,6 @@ pipeline {
                 echo '============================================'
 
                 powershell '''
-                    Write-Host ""
-                    Write-Host "Checking backend..."
 
                     $backend = Test-NetConnection `
                         -ComputerName "localhost" `
@@ -810,15 +670,10 @@ pipeline {
 
                     if (-not $backend.TcpTestSucceeded) {
 
-                        Write-Error "Backend stopped unexpectedly."
+                        Write-Error "Backend is down."
                         exit 1
                     }
 
-                    Write-Host "Backend :8082 -> RUNNING"
-
-
-                    Write-Host ""
-                    Write-Host "Checking Tomcat..."
 
                     $tomcat = Test-NetConnection `
                         -ComputerName "localhost" `
@@ -827,16 +682,14 @@ pipeline {
 
                     if (-not $tomcat.TcpTestSucceeded) {
 
-                        Write-Error "Tomcat stopped unexpectedly."
+                        Write-Error "Tomcat is down."
                         exit 1
                     }
-
-                    Write-Host "Tomcat :8084 -> RUNNING"
 
 
                     Write-Host ""
                     Write-Host "============================================"
-                    Write-Host "ALL SERVICES ARE RUNNING"
+                    Write-Host "BACKEND + TOMCAT ARE RUNNING"
                     Write-Host "============================================"
                 '''
             }
@@ -844,7 +697,7 @@ pipeline {
 
 
         // =====================================================
-        // 16. RUN PLAYWRIGHT TESTS
+        // 16. RUN PLAYWRIGHT
         // =====================================================
 
         stage('Run Playwright Tests') {
@@ -856,16 +709,8 @@ pipeline {
                 echo '============================================'
 
                 bat '''
+
                     cd /D "%PLAYWRIGHT_DIR%"
-
-
-                    echo.
-                    echo ============================================
-                    echo PLAYWRIGHT PROJECT
-                    echo ============================================
-
-                    echo Current directory:
-                    cd
 
 
                     echo.
@@ -886,21 +731,7 @@ pipeline {
 
                     echo.
                     echo ============================================
-                    echo CLEANING OLD TEST RESULTS
-                    echo ============================================
-
-                    if exist "playwright-report" (
-                        rmdir /S /Q "playwright-report"
-                    )
-
-                    if exist "test-results" (
-                        rmdir /S /Q "test-results"
-                    )
-
-
-                    echo.
-                    echo ============================================
-                    echo STARTING PLAYWRIGHT TESTS
+                    echo STARTING PLAYWRIGHT
                     echo ============================================
 
                     npx playwright test
@@ -928,15 +759,15 @@ pipeline {
 
 
     // =========================================================
-    // POST ACTIONS
+    // POST
     // =========================================================
 
     post {
 
 
-        // =====================================================
+        // -----------------------------------------------------
         // ALWAYS
-        // =====================================================
+        // -----------------------------------------------------
 
         always {
 
@@ -945,16 +776,8 @@ pipeline {
             echo '============================================'
 
 
-            // -------------------------------------------------
-            // Copy Playwright HTML report to Jenkins workspace
-            // -------------------------------------------------
-
+            // Copy HTML report
             bat '''
-                echo.
-                echo ============================================
-                echo COPYING PLAYWRIGHT HTML REPORT
-                echo ============================================
-
 
                 if exist "playwright-report" (
                     rmdir /S /Q "playwright-report"
@@ -967,25 +790,17 @@ pipeline {
                     "%PLAYWRIGHT_DIR%\\playwright-report" ^
                     "playwright-report"
 
-                    echo Playwright HTML report copied.
+                    echo Playwright report copied.
 
                 ) else (
 
-                    echo Playwright HTML report not found.
+                    echo No Playwright HTML report found.
                 )
             '''
 
 
-            // -------------------------------------------------
-            // Copy test-results to Jenkins workspace
-            // -------------------------------------------------
-
+            // Copy screenshots/videos/traces
             bat '''
-                echo.
-                echo ============================================
-                echo COPYING PLAYWRIGHT TEST RESULTS
-                echo ============================================
-
 
                 if exist "test-results" (
                     rmdir /S /Q "test-results"
@@ -1002,47 +817,29 @@ pipeline {
 
                 ) else (
 
-                    echo Playwright test-results directory not found.
+                    echo No Playwright test-results found.
                 )
             '''
 
 
-            // -------------------------------------------------
-            // Archive screenshots, videos and traces
-            // -------------------------------------------------
-
+            // Archive Playwright artifacts
             archiveArtifacts(
                 artifacts: 'test-results/**/*',
                 allowEmptyArchive: true,
                 fingerprint: true
             )
-
-
-            // -------------------------------------------------
-            // Publish HTML report
-            // -------------------------------------------------
-
-            publishHTML([
-                allowMissing: true,
-                alwaysLinkToLastBuild: true,
-                keepAll: true,
-                reportDir: 'playwright-report',
-                reportFiles: 'index.html',
-                reportName: 'Playwright Test Report',
-                reportTitles: 'Quiz Engine Playwright Tests'
-            ])
         }
 
 
-        // =====================================================
+        // -----------------------------------------------------
         // SUCCESS
-        // =====================================================
+        // -----------------------------------------------------
 
         success {
 
             echo '''
 ============================================================
-          DEPLOYMENT + PLAYWRIGHT SUCCESSFUL
+             DEPLOYMENT + PLAYWRIGHT PASSED
 ============================================================
 
 Backend:
@@ -1062,24 +859,24 @@ ALL TESTS PASSED
         }
 
 
-        // =====================================================
+        // -----------------------------------------------------
         // FAILURE
-        // =====================================================
+        // -----------------------------------------------------
 
         failure {
 
             echo '''
 ============================================================
-          DEPLOYMENT OR PLAYWRIGHT TEST FAILED
+             DEPLOYMENT OR TEST FAILED
 ============================================================
 
-Check:
+Check the Jenkins console output.
 
-1. Jenkins console output
-2. Playwright Test Report
-3. Playwright screenshots
-4. Playwright videos
-5. Playwright traces
+If Playwright failed, check:
+
+test-results/
+
+playwright-report/
 
 ============================================================
 '''
