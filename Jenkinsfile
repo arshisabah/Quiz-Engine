@@ -210,7 +210,7 @@ pipeline {
                 bat '''
                     powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*quizapp-0.0.1-SNAPSHOT.jar*' } | ForEach-Object { Write-Host ('Stopping backend PID: ' + $_.ProcessId); Stop-Process -Id $_.ProcessId -Force }"
         
-                    timeout /t 3 /nobreak
+                    powershell.exe -NoProfile -Command "Start-Sleep -Seconds 3"
                 '''
             }
         }
@@ -290,19 +290,17 @@ pipeline {
         // =====================================================
 
         stage('Stop Tomcat') {
-
+        
             steps {
-
+        
                 echo '============================================'
                 echo 'STOPPING TOMCAT'
                 echo '============================================'
-
+        
                 bat '''
                     call "%TOMCAT_HOME%\\bin\\shutdown.bat"
-
-                    echo Waiting for Tomcat to stop...
-
-                    timeout /t 10 /nobreak
+        
+                    powershell.exe -NoProfile -Command "Start-Sleep -Seconds 10"
                 '''
             }
         }
@@ -396,19 +394,17 @@ pipeline {
         // =====================================================
 
         stage('Start Tomcat') {
-
+        
             steps {
-
+        
                 echo '============================================'
-                echo 'STARTING TOMCAT :8084'
+                echo 'STARTING TOMCAT ON PORT 8084'
                 echo '============================================'
-
+        
                 bat '''
                     call "%TOMCAT_HOME%\\bin\\startup.bat"
-
-                    echo Waiting for Tomcat...
-
-                    timeout /t 20 /nobreak
+        
+                    powershell.exe -NoProfile -Command "Start-Sleep -Seconds 20"
                 '''
             }
         }
