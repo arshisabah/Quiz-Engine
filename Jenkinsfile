@@ -244,41 +244,46 @@ pipeline {
         // =====================================================
 
         stage('Wait For Backend') {
-
+        
             steps {
-
+        
                 echo '============================================'
-                echo 'WAITING FOR BACKEND :8082'
+                echo 'WAITING FOR BACKEND ON PORT 8082'
                 echo '============================================'
-
+        
                 timeout(time: 90, unit: 'SECONDS') {
-
-                    bat '''
-                        powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-                        "$ready = $false; ^
-                        for ($i = 0; $i -lt 18; $i++) { ^
-
-                            $result = Test-NetConnection ^
-                                -ComputerName 'localhost' ^
-                                -Port 8082 ^
-                                -WarningAction SilentlyContinue; ^
-
-                            if ($result.TcpTestSucceeded) { ^
-                                Write-Host '================================'; ^
-                                Write-Host 'BACKEND IS UP ON PORT 8082'; ^
-                                Write-Host '================================'; ^
-                                $ready = $true; ^
-                                break ^
-                            ^
-
-                            Write-Host 'Backend not ready... waiting 5 seconds'; ^
-                            Start-Sleep -Seconds 5 ^
-                        } ^
-
-                        if (-not $ready) { ^
-                            Write-Host 'Backend failed to start'; ^
-                            exit 1 ^
-                        }"
+        
+                    powershell '''
+                        $ready = $false
+        
+                        for ($i = 0; $i -lt 18; $i++) {
+        
+                            $result = Test-NetConnection `
+                                -ComputerName "localhost" `
+                                -Port 8082 `
+                                -WarningAction SilentlyContinue
+        
+                            if ($result.TcpTestSucceeded) {
+        
+                                Write-Host "================================"
+                                Write-Host "BACKEND IS UP ON PORT 8082"
+                                Write-Host "================================"
+        
+                                $ready = $true
+                                break
+                            }
+        
+                            Write-Host "Backend not ready... waiting 5 seconds"
+        
+                            Start-Sleep -Seconds 5
+                        }
+        
+                        if (-not $ready) {
+        
+                            Write-Host "Backend failed to start."
+        
+                            exit 1
+                        }
                     '''
                 }
             }
@@ -415,41 +420,46 @@ pipeline {
         // =====================================================
 
         stage('Wait For Tomcat') {
-
+        
             steps {
-
+        
                 echo '============================================'
-                echo 'WAITING FOR TOMCAT :8084'
+                echo 'WAITING FOR TOMCAT ON PORT 8084'
                 echo '============================================'
-
+        
                 timeout(time: 90, unit: 'SECONDS') {
-
-                    bat '''
-                        powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-                        "$ready = $false; ^
-                        for ($i = 0; $i -lt 18; $i++) { ^
-
-                            $result = Test-NetConnection ^
-                                -ComputerName 'localhost' ^
-                                -Port 8084 ^
-                                -WarningAction SilentlyContinue; ^
-
-                            if ($result.TcpTestSucceeded) { ^
-                                Write-Host '================================'; ^
-                                Write-Host 'TOMCAT IS UP ON PORT 8084'; ^
-                                Write-Host '================================'; ^
-                                $ready = $true; ^
-                                break ^
-                            ^
-
-                            Write-Host 'Tomcat not ready... waiting 5 seconds'; ^
-                            Start-Sleep -Seconds 5 ^
-                        } ^
-
-                        if (-not $ready) { ^
-                            Write-Host 'Tomcat failed to start'; ^
-                            exit 1 ^
-                        }"
+        
+                    powershell '''
+                        $ready = $false
+        
+                        for ($i = 0; $i -lt 18; $i++) {
+        
+                            $result = Test-NetConnection `
+                                -ComputerName "localhost" `
+                                -Port 8084 `
+                                -WarningAction SilentlyContinue
+        
+                            if ($result.TcpTestSucceeded) {
+        
+                                Write-Host "================================"
+                                Write-Host "TOMCAT IS UP ON PORT 8084"
+                                Write-Host "================================"
+        
+                                $ready = $true
+                                break
+                            }
+        
+                            Write-Host "Tomcat not ready... waiting 5 seconds"
+        
+                            Start-Sleep -Seconds 5
+                        }
+        
+                        if (-not $ready) {
+        
+                            Write-Host "Tomcat failed to start."
+        
+                            exit 1
+                        }
                     '''
                 }
             }
