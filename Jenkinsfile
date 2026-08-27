@@ -2,7 +2,6 @@ pipeline {
 
     agent any
 
-
     // =========================================================
     // OPTIONS
     // =========================================================
@@ -349,6 +348,7 @@ pipeline {
                                 Write-Host "BACKEND IS UP ON 8082"
 
                                 $ready = $true
+
                                 break
                             }
 
@@ -529,6 +529,7 @@ pipeline {
                                 Write-Host "============================================"
 
                                 $ready = $true
+
                                 break
                             }
 
@@ -562,11 +563,13 @@ pipeline {
                 powershell '''
 
                     Write-Host "Tomcat is running."
+
                     Write-Host "Waiting for Appzillon applications to initialize..."
 
                     Start-Sleep -Seconds 20
 
                     Write-Host ""
+
                     Write-Host "Appzillon initialization wait completed."
                 '''
             }
@@ -598,6 +601,7 @@ pipeline {
                     if (-not $backend.TcpTestSucceeded) {
 
                         Write-Error "Backend is not running."
+
                         exit 1
                     }
 
@@ -615,6 +619,7 @@ pipeline {
                     if (-not $tomcat.TcpTestSucceeded) {
 
                         Write-Error "Tomcat is not running."
+
                         exit 1
                     }
 
@@ -627,16 +632,21 @@ pipeline {
                     if (-not (Test-Path "$env:TOMCAT_WEBAPPS\\AppzillonServer.war")) {
 
                         Write-Error "AppzillonServer.war missing."
+
                         exit 1
                     }
+
 
                     if (-not (Test-Path "$env:TOMCAT_WEBAPPS\\quizapp.war")) {
 
                         Write-Error "quizapp.war missing."
+
                         exit 1
                     }
 
+
                     Write-Host "AppzillonServer.war -> OK"
+
                     Write-Host "quizapp.war -> OK"
 
 
@@ -671,6 +681,7 @@ pipeline {
                     if (-not $backend.TcpTestSucceeded) {
 
                         Write-Error "Backend is down."
+
                         exit 1
                     }
 
@@ -683,13 +694,17 @@ pipeline {
                     if (-not $tomcat.TcpTestSucceeded) {
 
                         Write-Error "Tomcat is down."
+
                         exit 1
                     }
 
 
                     Write-Host ""
+
                     Write-Host "============================================"
+
                     Write-Host "BACKEND + TOMCAT ARE RUNNING"
+
                     Write-Host "============================================"
                 '''
             }
@@ -697,113 +712,125 @@ pipeline {
 
 
         // =====================================================
-        // 16. RUN PLAYWRIGHT
+        // 16. RUN PLAYWRIGHT TESTS
         // =====================================================
 
         stage('Run Playwright Tests') {
-        
+
             steps {
-        
+
                 echo '============================================'
                 echo 'RUNNING PLAYWRIGHT TESTS'
                 echo '============================================'
-        
+
+
                 bat '''
-                    cd /D "D:\\Deployment\\scripts"
-        
+
+                    cd /D "%PLAYWRIGHT_DIR%"
+
+
                     echo.
                     echo ============================================
                     echo PLAYWRIGHT DIRECTORY
                     echo ============================================
-        
+
                     cd
-        
-        
+
+
                     echo.
                     echo ============================================
                     echo NODE VERSION
                     echo ============================================
-        
+
                     node -v
-        
-        
+
+
                     echo.
                     echo ============================================
                     echo NPM VERSION
                     echo ============================================
-        
+
                     npm -v
-        
-        
+
+
                     echo.
                     echo ============================================
                     echo INSTALLING NODE DEPENDENCIES
                     echo ============================================
-        
+
                     npm ci
-        
+
                     if errorlevel 1 (
+
                         echo ERROR: npm ci failed
+
                         exit /b 1
                     )
-        
-        
+
+
                     echo.
                     echo ============================================
                     echo CHECKING PLAYWRIGHT
                     echo ============================================
-        
+
                     npx playwright --version
-        
+
                     if errorlevel 1 (
+
                         echo ERROR: Playwright is not available
+
                         exit /b 1
                     )
-        
-        
+
+
                     echo.
                     echo ============================================
                     echo INSTALLING CHROMIUM
                     echo ============================================
-        
+
                     npx playwright install chromium
-        
+
                     if errorlevel 1 (
+
                         echo ERROR: Chromium installation failed
+
                         exit /b 1
                     )
-        
-        
+
+
                     echo.
                     echo ============================================
                     echo CLEANING OLD RESULTS
                     echo ============================================
-        
+
                     if exist "playwright-report" (
                         rmdir /S /Q "playwright-report"
                     )
-        
+
+
                     if exist "test-results" (
                         rmdir /S /Q "test-results"
                     )
-        
-        
+
+
                     echo.
                     echo ============================================
                     echo STARTING PLAYWRIGHT TEST
                     echo ============================================
-        
+
                     npx playwright test
-        
+
                     if errorlevel 1 (
+
                         echo.
                         echo ============================================
                         echo PLAYWRIGHT TEST FAILED
                         echo ============================================
+
                         exit /b 1
                     )
-        
-        
+
+
                     echo.
                     echo ============================================
                     echo PLAYWRIGHT TEST PASSED
@@ -813,25 +840,35 @@ pipeline {
         }
 
 
+    }   // =====================================================
+        // CLOSES stages
+        // =====================================================
+
+
     // =========================================================
-    // POST
+    // POST ACTIONS
     // =========================================================
 
     post {
 
 
-        // -----------------------------------------------------
+        // =====================================================
         // ALWAYS
-        // -----------------------------------------------------
+        // =====================================================
 
         always {
 
             echo '============================================'
+
             echo 'COLLECTING PLAYWRIGHT RESULTS'
+
             echo '============================================'
 
 
+            // -------------------------------------------------
             // Copy HTML report
+            // -------------------------------------------------
+
             bat '''
 
                 if exist "playwright-report" (
@@ -854,7 +891,10 @@ pipeline {
             '''
 
 
+            // -------------------------------------------------
             // Copy screenshots/videos/traces
+            // -------------------------------------------------
+
             bat '''
 
                 if exist "test-results" (
@@ -877,7 +917,10 @@ pipeline {
             '''
 
 
+            // -------------------------------------------------
             // Archive Playwright artifacts
+            // -------------------------------------------------
+
             archiveArtifacts(
                 artifacts: 'test-results/**/*',
                 allowEmptyArchive: true,
@@ -886,9 +929,9 @@ pipeline {
         }
 
 
-        // -----------------------------------------------------
+        // =====================================================
         // SUCCESS
-        // -----------------------------------------------------
+        // =====================================================
 
         success {
 
@@ -914,9 +957,9 @@ ALL TESTS PASSED
         }
 
 
-        // -----------------------------------------------------
+        // =====================================================
         // FAILURE
-        // -----------------------------------------------------
+        // =====================================================
 
         failure {
 
