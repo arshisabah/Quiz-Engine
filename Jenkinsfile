@@ -200,28 +200,18 @@ pipeline {
         // =====================================================
 
         stage('Stop Backend') {
-
+        
             steps {
-
+        
                 echo '============================================'
                 echo 'STOPPING OLD BACKEND'
                 echo '============================================'
-
+        
                 bat '''
-                    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-                    "$processes = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*quizapp-0.0.1-SNAPSHOT.jar*' }; ^
-                    foreach ($p in $processes) { ^
-                        Write-Host ('Stopping backend PID: ' + $p.ProcessId); ^
-                        Stop-Process -Id $p.ProcessId -Force ^
-                    }"
+                    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*quizapp-0.0.1-SNAPSHOT.jar*' } | ForEach-Object { Write-Host ('Stopping backend PID: ' + $_.ProcessId); Stop-Process -Id $_.ProcessId -Force }"
+        
+                    timeout /t 3 /nobreak
                 '''
-
-                timeout(time: 10, unit: 'SECONDS') {
-
-                    bat '''
-                        timeout /t 3 /nobreak
-                    '''
-                }
             }
         }
 
@@ -231,37 +221,19 @@ pipeline {
         // =====================================================
 
         stage('Start Backend') {
-
+        
             steps {
-
+        
                 echo '============================================'
                 echo 'STARTING BACKEND'
                 echo '============================================'
-
+        
                 bat '''
-                    if exist "%BACKEND_LOG%" (
-                        del /F /Q "%BACKEND_LOG%"
-                    )
-
-                    if exist "%BACKEND_ERROR_LOG%" (
-                        del /F /Q "%BACKEND_ERROR_LOG%"
-                    )
-
-                    if exist "%BACKEND_PID%" (
-                        del /F /Q "%BACKEND_PID%"
-                    )
-
-
-                    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-                    "$process = Start-Process ^
-                    -FilePath 'java' ^
-                    -ArgumentList '-jar','%BACKEND_JAR%' ^
-                    -WorkingDirectory '%BACKEND_DIR%' ^
-                    -RedirectStandardOutput '%BACKEND_LOG%' ^
-                    -RedirectStandardError '%BACKEND_ERROR_LOG%' ^
-                    -PassThru; ^
-                    Set-Content '%BACKEND_PID%' $process.Id; ^
-                    Write-Host ('Backend started with PID: ' + $process.Id)"
+                    if exist "%BACKEND_LOG%" del /F /Q "%BACKEND_LOG%"
+                    if exist "%BACKEND_ERROR_LOG%" del /F /Q "%BACKEND_ERROR_LOG%"
+                    if exist "%BACKEND_PID%" del /F /Q "%BACKEND_PID%"
+        
+                    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$p = Start-Process -FilePath 'java' -ArgumentList '-jar','%BACKEND_JAR%' -WorkingDirectory '%BACKEND_DIR%' -RedirectStandardOutput '%BACKEND_LOG%' -RedirectStandardError '%BACKEND_ERROR_LOG%' -PassThru; Set-Content '%BACKEND_PID%' $p.Id; Write-Host ('Backend started with PID: ' + $p.Id)"
                 '''
             }
         }
