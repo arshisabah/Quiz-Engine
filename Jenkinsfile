@@ -2,17 +2,18 @@ pipeline {
 
     agent any
 
+
     // =========================================================
-    // IMPORTANT:
-    // Jenkins automatically checks out the repository.
-    // We are doing our own checkout below.
+    // OPTIONS
     // =========================================================
 
     options {
+
+        // We perform our own Git checkout
         skipDefaultCheckout(true)
 
-        // Prevent Jenkins from waiting forever
-        timeout(time: 15, unit: 'MINUTES')
+        // Maximum pipeline execution time
+        timeout(time: 20, unit: 'MINUTES')
     }
 
 
@@ -23,7 +24,7 @@ pipeline {
     environment {
 
         // -----------------------------------------------------
-        // LOCAL DEPLOYMENT
+        // DEPLOYMENT
         // -----------------------------------------------------
 
         DEPLOYMENT_DIR = 'D:\\Deployment'
@@ -79,6 +80,13 @@ pipeline {
         BACKEND_PORT = '8082'
 
         TOMCAT_PORT = '8084'
+
+
+        // -----------------------------------------------------
+        // PLAYWRIGHT
+        // -----------------------------------------------------
+
+        PLAYWRIGHT_DIR = 'D:\\Deployment\\scripts'
     }
 
 
@@ -135,6 +143,18 @@ pipeline {
 
 
                     echo.
+                    echo ==================== NODE ====================
+
+                    node -v
+
+
+                    echo.
+                    echo ==================== NPM ====================
+
+                    npm -v
+
+
+                    echo.
                     echo ==================== TOMCAT ====================
 
                     if not exist "%TOMCAT_HOME%" (
@@ -169,6 +189,36 @@ pipeline {
                     )
 
                     echo quizapp.war found
+
+
+                    echo.
+                    echo ==================== PLAYWRIGHT ====================
+
+                    if not exist "%PLAYWRIGHT_DIR%" (
+                        echo ERROR: Playwright directory not found
+                        echo %PLAYWRIGHT_DIR%
+                        exit /b 1
+                    )
+
+                    if not exist "%PLAYWRIGHT_DIR%\\package.json" (
+                        echo ERROR: package.json not found
+                        echo %PLAYWRIGHT_DIR%\\package.json
+                        exit /b 1
+                    )
+
+                    if not exist "%PLAYWRIGHT_DIR%\\package-lock.json" (
+                        echo ERROR: package-lock.json not found
+                        echo %PLAYWRIGHT_DIR%\\package-lock.json
+                        exit /b 1
+                    )
+
+                    if not exist "%PLAYWRIGHT_DIR%\\tests" (
+                        echo ERROR: Playwright tests directory not found
+                        echo %PLAYWRIGHT_DIR%\\tests
+                        exit /b 1
+                    )
+
+                    echo Playwright project found.
 
 
                     echo.
@@ -609,6 +659,7 @@ pipeline {
                             }
 
                             Write-Host "Waiting for Tomcat to unpack WAR files..."
+
                             Start-Sleep -Seconds 5
                         }
 
@@ -731,11 +782,6 @@ pipeline {
                     Write-Host "============================================"
                     Write-Host "DEPLOYMENT SUCCESSFUL"
                     Write-Host "============================================"
-
-                    Write-Host ""
-                    Write-Host "Backend : http://localhost:8082"
-                    Write-Host "Tomcat  : http://localhost:8084"
-                    Write-Host "Appzillon WAR : quizapp.war"
                 '''
             }
         }
@@ -768,7 +814,6 @@ pipeline {
                         exit 1
                     }
 
-
                     Write-Host "Backend :8082 -> RUNNING"
 
 
@@ -786,7 +831,6 @@ pipeline {
                         exit 1
                     }
 
-
                     Write-Host "Tomcat :8084 -> RUNNING"
 
 
@@ -794,6 +838,89 @@ pipeline {
                     Write-Host "============================================"
                     Write-Host "ALL SERVICES ARE RUNNING"
                     Write-Host "============================================"
+                '''
+            }
+        }
+
+
+        // =====================================================
+        // 16. RUN PLAYWRIGHT TESTS
+        // =====================================================
+
+        stage('Run Playwright Tests') {
+
+            steps {
+
+                echo '============================================'
+                echo 'RUNNING PLAYWRIGHT TESTS'
+                echo '============================================'
+
+                bat '''
+                    cd /D "%PLAYWRIGHT_DIR%"
+
+
+                    echo.
+                    echo ============================================
+                    echo PLAYWRIGHT PROJECT
+                    echo ============================================
+
+                    echo Current directory:
+                    cd
+
+
+                    echo.
+                    echo ============================================
+                    echo INSTALLING NODE DEPENDENCIES
+                    echo ============================================
+
+                    npm ci
+
+
+                    echo.
+                    echo ============================================
+                    echo INSTALLING PLAYWRIGHT CHROMIUM
+                    echo ============================================
+
+                    npx playwright install chromium
+
+
+                    echo.
+                    echo ============================================
+                    echo CLEANING OLD TEST RESULTS
+                    echo ============================================
+
+                    if exist "playwright-report" (
+                        rmdir /S /Q "playwright-report"
+                    )
+
+                    if exist "test-results" (
+                        rmdir /S /Q "test-results"
+                    )
+
+
+                    echo.
+                    echo ============================================
+                    echo STARTING PLAYWRIGHT TESTS
+                    echo ============================================
+
+                    npx playwright test
+
+
+                    if errorlevel 1 (
+
+                        echo.
+                        echo ============================================
+                        echo PLAYWRIGHT TESTS FAILED
+                        echo ============================================
+
+                        exit /b 1
+                    )
+
+
+                    echo.
+                    echo ============================================
+                    echo PLAYWRIGHT TESTS PASSED
+                    echo ============================================
                 '''
             }
         }
@@ -806,11 +933,116 @@ pipeline {
 
     post {
 
+
+        // =====================================================
+        // ALWAYS
+        // =====================================================
+
+        always {
+
+            echo '============================================'
+            echo 'COLLECTING PLAYWRIGHT RESULTS'
+            echo '============================================'
+
+
+            // -------------------------------------------------
+            // Copy Playwright HTML report to Jenkins workspace
+            // -------------------------------------------------
+
+            bat '''
+                echo.
+                echo ============================================
+                echo COPYING PLAYWRIGHT HTML REPORT
+                echo ============================================
+
+
+                if exist "playwright-report" (
+                    rmdir /S /Q "playwright-report"
+                )
+
+
+                if exist "%PLAYWRIGHT_DIR%\\playwright-report" (
+
+                    xcopy /E /I /Y ^
+                    "%PLAYWRIGHT_DIR%\\playwright-report" ^
+                    "playwright-report"
+
+                    echo Playwright HTML report copied.
+
+                ) else (
+
+                    echo Playwright HTML report not found.
+                )
+            '''
+
+
+            // -------------------------------------------------
+            // Copy test-results to Jenkins workspace
+            // -------------------------------------------------
+
+            bat '''
+                echo.
+                echo ============================================
+                echo COPYING PLAYWRIGHT TEST RESULTS
+                echo ============================================
+
+
+                if exist "test-results" (
+                    rmdir /S /Q "test-results"
+                )
+
+
+                if exist "%PLAYWRIGHT_DIR%\\test-results" (
+
+                    xcopy /E /I /Y ^
+                    "%PLAYWRIGHT_DIR%\\test-results" ^
+                    "test-results"
+
+                    echo Playwright test results copied.
+
+                ) else (
+
+                    echo Playwright test-results directory not found.
+                )
+            '''
+
+
+            // -------------------------------------------------
+            // Archive screenshots, videos and traces
+            // -------------------------------------------------
+
+            archiveArtifacts(
+                artifacts: 'test-results/**/*',
+                allowEmptyArchive: true,
+                fingerprint: true
+            )
+
+
+            // -------------------------------------------------
+            // Publish HTML report
+            // -------------------------------------------------
+
+            publishHTML([
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: 'playwright-report',
+                reportFiles: 'index.html',
+                reportName: 'Playwright Test Report',
+                reportTitles: 'Quiz Engine Playwright Tests'
+            ])
+        }
+
+
+        // =====================================================
+        // SUCCESS
+        // =====================================================
+
         success {
 
             echo '''
 ============================================================
-                 DEPLOYMENT SUCCESSFUL
+          DEPLOYMENT + PLAYWRIGHT SUCCESSFUL
 ============================================================
 
 Backend:
@@ -822,53 +1054,35 @@ http://localhost:8084
 Appzillon:
 http://localhost:8084/quizapp
 
-Backend JAR:
-D:\\Deployment\\backend\\quizapp-0.0.1-SNAPSHOT.jar
-
-Tomcat:
-D:\\Softwarespath\\apache-tomcat-9.0.53\\apache-tomcat-9.0.53
+Playwright:
+ALL TESTS PASSED
 
 ============================================================
 '''
         }
 
 
+        // =====================================================
+        // FAILURE
+        // =====================================================
+
         failure {
 
             echo '''
 ============================================================
-                 DEPLOYMENT FAILED
+          DEPLOYMENT OR PLAYWRIGHT TEST FAILED
+============================================================
+
+Check:
+
+1. Jenkins console output
+2. Playwright Test Report
+3. Playwright screenshots
+4. Playwright videos
+5. Playwright traces
+
 ============================================================
 '''
-
-            bat '''
-                echo.
-                echo ==================================================
-                echo BACKEND LOG
-                echo ==================================================
-
-                if exist "%BACKEND_LOG%" (
-                    type "%BACKEND_LOG%"
-                )
-
-
-                echo.
-                echo ==================================================
-                echo BACKEND ERROR LOG
-                echo ==================================================
-
-                if exist "%BACKEND_ERROR_LOG%" (
-                    type "%BACKEND_ERROR_LOG%"
-                )
-
-
-                echo.
-                echo ==================================================
-                echo TOMCAT LOG LOCATION
-                echo ==================================================
-
-                echo %TOMCAT_HOME%\\logs
-            '''
         }
     }
 }
