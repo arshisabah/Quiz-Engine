@@ -13,6 +13,8 @@ pipeline {
             time: 30,
             unit: 'MINUTES'
         )
+
+        pollSCM('H/2 * * * *')
     }
 
 
